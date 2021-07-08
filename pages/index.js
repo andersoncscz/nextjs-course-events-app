@@ -1,6 +1,7 @@
 import React from 'react'
 import {getFeaturedEvents} from '../helpers/apiUtils'
 import EventList from '../components/events/EventList'
+import NewsletterRegistration from '../components/input/NewsLetterRegistration'
 import Head from 'next/head'
 
 function HomePage({ events }) {
@@ -10,6 +11,7 @@ function HomePage({ events }) {
                 <title>NextJS Events</title>
                 <meta name="description" content="NextJS Course" />
             </Head>
+            <NewsletterRegistration />
             <EventList items={events} />
         </div>
     )

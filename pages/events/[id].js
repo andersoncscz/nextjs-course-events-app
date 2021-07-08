@@ -1,4 +1,5 @@
 import React from 'react'
+import Comments from '../../components/input/Comments'
 import EventSummary from '../../components/EventDetail/EventSummary'
 import EventLogistics from '../../components/EventDetail/EventLogistics'
 import EventContent from '../../components/EventDetail/EventContent'
@@ -26,7 +27,8 @@ function EventDetailPage({event}) {
             imageAlt={event.title} />
          <EventContent>
              <p>{event.description}</p>
-         </EventContent> 
+         </EventContent>
+         <Comments eventId={event.id} />
         </>
     )
 }
