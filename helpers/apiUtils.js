@@ -1,4 +1,4 @@
-const BASE_URL = 'https://nextjs-course-2e6c5-default-rtdb.firebaseio.com/'
+export const BASE_URL = 'https://nextjs-course-2e6c5-default-rtdb.firebaseio.com/'
 
 export async function getAllEvents() {
     const response = await fetch(`${BASE_URL}/events.json`)
@@ -25,3 +25,16 @@ export async function getEventById(id) {
     const allEvents = await getAllEvents()
     return allEvents.filter(event => event.id === id)[0] ?? undefined
 }
+
+export async function getFilteredEvents(dateFilter) {
+    const allEvents = await getAllEvents()
+    
+    const { year, month } = dateFilter;
+    
+    const filteredEvents = allEvents.filter((event) => {
+      const eventDate = new Date(event.date);
+      return eventDate.getFullYear() === year && eventDate.getMonth() === month - 1;
+    });
+  
+    return filteredEvents;
+  }

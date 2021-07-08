@@ -1,22 +1,49 @@
-import React from 'react'
+import React, {useEffect, useState} from 'react'
 import Button from '../../components/ui/Button'
 import ErrorAlert from '../../components/ui/ErrorAlert'
 import EventList from '../../components/events/EventList'
 import {useRouter} from 'next/router'
-import { getFilteredEvents } from '../../dummy-data'
+import { BASE_URL } from '../../helpers/apiUtils'
 import ResultsTitle from '../../components/events/ResultsTitle'
+import useSWR from 'swr'
+import Head from 'next/head'
 
 function FilteredEventsPage() {
-    const router = useRouter()
-    const filteredData = router.query.slug
+    const [events, setEvents] = useState([])
 
-    if (!filteredData) {
+    const router = useRouter()
+    const filter = router.query.slug
+    const {data: loadedEvents, error} = useSWR(`${BASE_URL}/events.json`)
+    
+    useEffect(() => {
+        if (loadedEvents) {
+            const transformedEvents = []
+
+            for (const key in loadedEvents) {
+               transformedEvents.push({
+                   id: key,
+                   ...loadedEvents[key]
+               })
+            }
+
+            setEvents(transformedEvents)
+        }
+    },[loadedEvents])
+
+    if (!loadedEvents) {
         return <p className="center">Loading...</p>
     }
 
-    const [filteredYear, filteredMonth] = filteredData
+    const [filteredYear, filteredMonth] = filter
     const numYear = +filteredYear
     const numMonth = +filteredMonth
+
+    let headData = (
+        <Head>
+            <title>Filtered Events</title>
+            <meta name="description" content="A list of filtered events" />
+        </Head>          
+    )
 
     function isValidYear() {
         return !isNaN(numYear) && numYear >= 2020 && numYear <= 2030
@@ -26,9 +53,14 @@ function FilteredEventsPage() {
         return !isNaN(numMonth) && numMonth >= 1 && numMonth <= 12
     }
 
-    if (!isValidMonth() || !isValidYear()) {
+    function hasError() {
+        return error
+    }
+
+    if (!isValidMonth() || !isValidYear() || hasError()) {
         return (
             <>
+                {headData}
                 <div className="center">
                     <ErrorAlert>
                         <p>Invalid Filter. Please adjust your values.</p>
@@ -39,10 +71,11 @@ function FilteredEventsPage() {
         )
     }
 
-    const filteredEvents = getFilteredEvents({
-        year: numYear,
-        month: numMonth
-    })
+
+    const filteredEvents = events.filter((event) => {
+        const eventDate = new Date(event.date);
+        return eventDate.getFullYear() === numYear && eventDate.getMonth() === numMonth - 1;
+    });
 
     function hasFiltered() {
         return filteredEvents && filteredEvents.length > 0
@@ -51,6 +84,7 @@ function FilteredEventsPage() {
     if (!hasFiltered()) {
         return (
             <>
+                {headData}
                 <div className="center">
                     <ErrorAlert>
                         <p>No events found for the event filtered.</p>
@@ -65,6 +99,7 @@ function FilteredEventsPage() {
 
     return (
         <>
+            {headData}       
             <ResultsTitle date={date} />
             <EventList items={filteredEvents} />
         </>

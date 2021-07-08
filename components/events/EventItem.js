@@ -1,5 +1,5 @@
-/* eslint-disable @next/next/no-img-element */
 import React from 'react'
+import Image from 'next/image'
 import classes from './EventItem.module.css'
 import Button from '../ui/Button'
 import DateIcon from '../icons/date-icon'
@@ -22,7 +22,7 @@ function EventItem(props) {
 
     return (
         <li className={classes.item}>
-            <img layout="fill" src={`/${image}`} alt="" />
+            <Image src={`/${image}`} alt="" width={340} height={250} />
             <div className={classes.content}>
                 <div className={classes.summary}>
                     <h2>
