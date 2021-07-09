@@ -18,7 +18,7 @@ function CommentList({ comments }) {
       </li>
       {comments.map(comment => {
         return (
-          <li key={comment.id}>
+          <li key={comment._id}>
             <p>{comment.text}</p>
             <div>
               By <address>{comment.name}</address>

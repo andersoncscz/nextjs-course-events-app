@@ -1,3 +1,5 @@
+import {connectToDatabase} from '../../../helpers/database'
+
 function isEmailValid(email) {
     return email && email.includes('@')
 }
@@ -12,74 +14,95 @@ function isCommentValid(comment) {
 
 
 
-function validateRequestBody(body) {
+function validateRequestBody(body, res) {
     const {email, name, text} = body
 
     if (!isEmailValid(email)) {
-        throw new Error({
+        res.status(500).json({
             message: 'Invalid email.'
-        })
+        })        
     }
 
     if (!isNameValid(name)) {
-        throw new Error({
+        res.status(500).json({
             message: 'Invalid name. Name must have more than 3 characteres.'
         })
     }
 
     if (!isCommentValid(text)) {
-        throw new Error({
+        res.status(500).json({
             message: 'Invalid comment. Comment must have more than 5 characteres.'
         })
     }
 }
 
-function registerNewComment(comment) {
-    return {
-        id: 5,
-        ...comment
+async function saveNewComment(comment, eventId, res) {
+    const client = await connectToDatabase('events')
+
+    try {
+        const newComment = {
+            eventId,
+            ...comment
+        }
+
+        const db = client.db()
+        const result = await db.collection('comments').insertOne(newComment)
+        const newCommentSaved = await db.collection('comments').findOne({
+            _id: result.ops[0]._id
+        }) 
+        await client.close()
+
+        return newCommentSaved
+
+    } catch (error) {
+        await client.close()
+
+        res.status(500).json({
+            message: `Error trying to create a new comment.`
+        })
     }
 }
 
-function getComments(eventId) {
-    return {
-        comments:[{
-            id: 1,
-            text: 'Comment 1',
-            name: 'Anderson'
-        }, {
-            id: 2,
-            text: 'Comment 2',
-            name: 'Anderson'
-        },{
-            id: 3,
-            text: 'Comment 3',
-            name: 'Anderson'
-        },{
-            id: 4,
-            text: 'Comment 4',
-            name: 'Anderson'
-        }]
+async function getComments(eventId, res) {
+    const client = await connectToDatabase('events')
+    try {
+        const db = client.db()
+        const comments = await db.collection('comments')
+            .find({ eventId})
+            .sort({_id: -1})
+            .toArray()
+        await client.close()
+    
+        return {
+            comments
+        }
+    } catch (error) {
+        await client.close()
+
+        res.status(500).json({
+            message: `Error trying to get a list of comments.`
+        })
     }
 }
 
 export default async function handler(req, res) {
     const eventId = req.query.id
     
-    if(req.method === 'POST') {
-        try {
-            validateRequestBody(req.body)
-
-            const comment = registerNewComment(req.body)
-
-            res.status(201).json(comment) 
-        } catch (error) {
-            res.status(422).json(error)
+    try {
+        if(req.method === 'POST') {
+            validateRequestBody(req.body, res)
+                
+            const newComment = await saveNewComment(req.body, eventId, res)
+            
+            res.status(201).json(newComment)
         }
-    }
-
-    else {
-        const comments = getComments(eventId)
-        res.status(200).json(comments)
+    
+        else {
+            const comments = await getComments(eventId, res)
+    
+            res.status(200).json(comments)  
+        }
+    } catch (error) {
+        console.log(error)
     }
 }

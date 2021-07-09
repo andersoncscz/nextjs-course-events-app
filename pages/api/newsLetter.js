@@ -1,28 +1,69 @@
+import {connectToDatabase} from '../../helpers/database'
+
 function isEmailValid(email) {
     return email && email.includes('@')
 }
 
-function validateRequestBody(body) {
+function validateRequestBody(body, res) {
     if (!isEmailValid(body.email)) {
-        throw new Error({
-            message: 'email invalid'
+        res.status(422).json({
+            message: 'Invalid email.'
         })
+
+        throw new Error('validateRequestBody')
+    }
+}
+
+async function save(email, res) {
+    const client = await connectToDatabase('events')
+    try {
+        const db = client.db()
+        await db.collection('emails').insertOne({
+            email
+        })
+        await client.close()
+    } catch (error) {
+        await client.close()
+
+        res.status(500).json({
+            message: 'Error trying to save.'
+        })
+
+        throw new Error('save')
+    }
+}
+
+async function validateUserExists(email, res) {
+    const client = await connectToDatabase('events')
+    const db = client.db()
+    const user = await db.collection('emails').findOne({
+        email
+    })
+
+    await client.close()
+
+    if (user) {
+        res.status(422).json({
+            message: 'User alredy exists.'
+        })
+
+        throw new Error('validateUserExists')
     }
 }
 
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         try {
-            validateRequestBody(req.body)
+            validateRequestBody(req.body, res)
             
-            console.log('Request Body is valid. Save in Database')
-
+            await validateUserExists(req.body.email, res)
+            await save(req.body.email, res)
+    
             res.status(201).json({
-                message: 'It works'
+                message: `User ${req.body.email} signed up!`
             })
-
         } catch (error) {
-            res.status(422).json(error)
+            console.log(error)
         }
     }
 }
